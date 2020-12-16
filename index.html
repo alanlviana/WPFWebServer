@@ -1,0 +1,82 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>My first page using EmbedIO</title>
+</head>
+<body>
+    <input id="inputTextToPrint" value="Success!"  />
+    <button onclick="callRemotePrint()">
+        Print
+    </button>
+
+    <ul id="eventList">
+        
+    </ul>
+
+    <script>
+
+        ws = null;
+        token = null;
+
+        function ready(callback) {
+            if (document.readyState != 'loading') {
+                callback();
+            } else if (document.addEventListener) {
+                document.addEventListener('DOMContentLoaded', callback);
+            }
+        }
+
+        function callRemotePrint() {
+            let inputTextToPrint = document.getElementById('inputTextToPrint');
+            let textToPrint = inputTextToPrint.value;
+
+            fetch('http://localhost:9696/api/printer', {
+                method: 'post',
+                headers: new Headers({
+                    'Authorization': 'Bearer ' + token
+                }),
+                body: JSON.stringify({ Text: textToPrint })
+            })
+            .then(
+                (response) => {
+                },
+                (reason) => {
+                }
+            );
+        }
+
+        function connectWebSocket() {
+            ws = new WebSocket("ws://localhost:9696/printer/events");
+
+            ws.onmessage = function (event) {
+                let listaEvento = document.getElementById('eventList');
+                listaEvento.insertAdjacentHTML('beforeend', '<li>'+event.data+'</li>')
+            }
+        };
+
+        function getToken() {
+            fetch("http://localhost:9696/api/token", {
+                body: "grant_type=password&username=alanlviana",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                method: "post",
+            }).then(
+                (response) => {
+                    response.json().then(value => token = value.access_token);
+                },
+                (reason) => {
+                    console.error(reason);
+                }
+            )
+        }
+
+        ready(function () {
+            getToken();
+            connectWebSocket();
+        });
+    </script>
+</body>
+</html>
